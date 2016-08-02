@@ -1,0 +1,6 @@
+## Changing nova filter from director.
+## No need to call the class explicitly as we did in case of cinder filter
+
+parameter_defaults:
+  controllerExtraConfig:
+    nova::scheduler::filter::scheduler_default_filters: ["RetryFilter","AvailabilityZoneFilter","RamFilter","ComputeFilter","ComputeCapabilitiesFilter","ImagePropertiesFilter","ServerGroupAntiAffinityFilter","ServerGroupAffinityFilter","DifferentHostFilter"]
