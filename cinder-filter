@@ -1,0 +1,8 @@
+## Changing the cinder filter from director.
+
+[stack@instack ~]$ cat nic-configs/cinder_scheduler-filter.yaml
+parameter_defaults:
+  controllerExtraConfig:
+    cinder::scheduler::filter::scheduler_default_filters: ['AvailabilityZoneFilter','CapacityFilter','CapabilitiesFilter','FooFilter']
+    controller_classes:
+      - cinder::scheduler::filter
