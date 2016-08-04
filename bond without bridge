@@ -1,0 +1,43 @@
+## Using VLAN interfaces on linux bonds without an OVS bridge
+
+network_config:
+  -
+    type: linux_bond
+    name: bond0
+    use_dhcp: false
+    bonding_options: "mode=active-backup"
+    members:
+      -
+        type: interface
+        name: nic2
+      -
+        type: interface
+        name: nic5
+  -
+    type: interface
+    name:
+      list_join:
+        - '.'
+        - - bond0
+          -
+            str_replace:
+              template: $vlanIDtoString
+              params:
+                $vlanIDtoString: {get_param: InternalApiNetworkVlanID}
+    addresses:
+      -
+        ip_netmask: {get_param: InternalApiIpSubnet}
+  -
+    type: interface
+    name:
+      list_join:
+        - '.'
+        - - bond0
+          -
+            str_replace:
+              template: $vlanIDtoString
+              params:
+                $vlanIDtoString: {get_param: StorageMgmtNetworkVlanID}
+    addresses:
+      -
+        ip_netmask: {get_param: StorageMgmtIpSubnet}
