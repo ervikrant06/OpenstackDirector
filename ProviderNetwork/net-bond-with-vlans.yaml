@@ -1,0 +1,95 @@
+# This template configures each role to use a pair of bonded nics (nic2 an`:d
+# nic3) and configures an IP address on each relevant isolated network
+# for each role. This template assumes use of network-isolation.yaml.
+#
+# FIXME: if/when we add functionality to heatclient to include heat
+# environment files we should think about using it here to automatically
+# include network-isolation.yaml.
+resource_registry:
+  OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/nic-config/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/nic-config/controller.yaml
+  OS::TripleO::CephStorage::Net::SoftwareConfig: /home/stack/nic-config/ceph-storage.yaml
+
+  OS::TripleO::Network::External: /usr/share/openstack-tripleo-heat-templates/network/external.yaml
+  OS::TripleO::Network::InternalApi: /usr/share/openstack-tripleo-heat-templates/network/internal_api.yaml
+  OS::TripleO::Network::StorageMgmt: /usr/share/openstack-tripleo-heat-templates/network/noop.yaml
+  OS::TripleO::Network::Storage: /usr/share/openstack-tripleo-heat-templates/network/storage.yaml
+  OS::TripleO::Network::Tenant: /usr/share/openstack-tripleo-heat-templates/network/noop.yaml
+
+
+  OS::TripleO::Network::Ports::ExternalVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/external.yaml
+  OS::TripleO::Network::Ports::InternalApiVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api.yaml
+  OS::TripleO::Network::Ports::StorageVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage.yaml
+  OS::TripleO::Network::Ports::StorageMgmtVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Network::Ports::TenantVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Network::Ports::RedisVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/vip.yaml
+
+
+  OS::TripleO::Controller::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/external.yaml
+  OS::TripleO::Controller::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api.yaml
+  OS::TripleO::Controller::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage.yaml
+  OS::TripleO::Controller::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Controller::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+
+  OS::TripleO::Compute::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api.yaml
+  OS::TripleO::Compute::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage.yaml
+  OS::TripleO::Compute::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+
+  OS::TripleO::CephStorage::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage.yaml
+  OS::TripleO::CephStorage::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+  OS::TripleO::SwiftStorage::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api.yaml
+  OS::TripleO::SwiftStorage::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage.yaml
+  OS::TripleO::SwiftStorage::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+parameter_defaults:
+  ServiceNetMap:
+    CeilometerApiNetwork: internal_api
+    MongoDbNetwork: internal_api
+    CinderApiNetwork: internal_api
+    CinderIscsiNetwork: storage
+    GlanceApiNetwork: storage
+    GlanceRegistryNetwork: internal_api
+    KeystoneAdminApiNetwork: ctlplane # Admin connection for Undercloud
+    KeystonePublicApiNetwork: internal_api
+    NeutronApiNetwork: internal_api
+    HeatApiNetwork: internal_api
+    NovaApiNetwork: internal_api
+    NovaMetadataNetwork: internal_api
+    NovaVncProxyNetwork: internal_api
+    SwiftMgmtNetwork: storage # Changed from storage_mgmt
+    SwiftProxyNetwork: storage
+    HorizonNetwork: internal_api
+    MemcachedNetwork: internal_api
+    RabbitMqNetwork: internal_api
+    RedisNetwork: internal_api
+    MysqlNetwork: internal_api
+    CephClusterNetwork: storage
+    CephPublicNetwork: storage
+    ControllerHostnameResolveNetwork: internal_api
+    ComputeHostnameResolveNetwork: internal_api
+    BlockStorageHostnameResolveNetwork: internal_api
+    ObjectStorageHostnameResolveNetwork: internal_api
+    CephStorageHostnameResolveNetwork: storage
+
+parameter_defaults:
+  UpdateIdentifier: ''
+  # This sets 'external_network_bridge' in l3_agent.ini to an empty string
+  # so that external networks act like provider bridge networks (they
+  # will plug into br-int instead of br-ex)
+  NeutronExternalNetworkBridge: "''"
+
+  ExternalNetCidr: '10.11.48.0/24'
+  ExternalAllocationPools: [{'start': '10.11.48.181', 'end': '10.11.48.190'}]
+  ExternalNetworkVlanID: 10
+  ExternalInterfaceDefaultRoute: '10.11.48.254'
+  InternalApiNetCidr: '192.168.124.0/24'
+  StorageNetCidr: '192.168.125.0/24'
+  InternalApiAllocationPools: [{'start': '192.168.124.20', 'end': '192.168.124.200'}]
+  StorageAllocationPools: [{'start': '192.168.125.20', 'end': '192.168.125.200'}]
+  InternalApiNetworkVlanID: 30
+  StorageNetworkVlanID: 20
+  ControlPlaneDefaultRoute: 192.0.2.250
+  EC2MetadataIp: 192.0.2.1
