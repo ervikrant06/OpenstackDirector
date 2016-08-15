@@ -1,0 +1,101 @@
+## Configure the repositories on baremetal node. 
+
+# yum install lftp wget -y
+# rm -rf /etc/yum.repos.d/*
+
+Configure the repositories.
+
+# systemctl stop  NetworkManager
+# systemctl disable NetworkManager
+# echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+# sysctl -p
+
+## Add stack user and give the sudo priviledges. 
+
+# useradd stack
+# echo root123 | passwd stack  --stdin
+# echo "stack ALL=(root) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/stack
+# chmod 0440 /etc/sudoers.d/stack
+# sed -i 's/Defaults    requiretty/Defaults    !requiretty/'  /etc/sudoers
+# yum install virt-manager dejavu-sans-fonts firefox xorg-x11-xauth instack-undercloud openvswitch net-tools virt-install libvirt libguestfs-tools-c nfs-utils -y
+# for i in libvirtd openvswitch ; do systemctl restart $i ; done
+
+## create a soft link so that space should be sufficient for overcloud setup.
+
+# rm -rf /var/lib/libvirt/images
+# mkdir /home/images
+# ln -s /home/images /var/lib/libvirt/images
+
+## Configure the openvswitch.
+
+# ovs-vsctl add-br vswitch
+# ovs-vsctl add-port vswitch external tag=10 -- set Interface external type=internal
+# ovs-vsctl add-port vswitch storage tag=20 -- set Interface storage type=internal
+# ovs-vsctl add-port vswitch api tag=30 -- set Interface api type=internal
+# ovs-vsctl add-port vswitch storage_mgmt tag=40 -- set Interface storage_mgmt type=internal
+# ovs-vsctl add-port vswitch tenant tag=50 -- set Interface tenant type=internal
+# ovs-vsctl add-br provider
+
+
+
+## As a stack user : 
+
+$ export DIB_LOCAL_IMAGE=/home/stack/rhel-guest-image-7.2-20151102.0.x86_64.qcow2
+$ export DIB_YUM_REPO_CONF=/etc/yum.repos.d/osp8.repo
+$ export NODE_COUNT=5
+
+## Node count 5 means, it will create 6 KVMs, one for the undercloud and rest KVMs for overcloud setup. We can use 3
+## 3 as controller nodes and 2 as compute nodes.
+
+$ instack-virt-setup
+
+## above will command do the setup of undercloud and five overcloud nodes.
+
+
+[root@instack ~]# ll /etc/yum.repos.d/osp8.repo 
+-rw-r--r--. 1 root root 805 Aug 15 04:51 /etc/yum.repos.d/osp8.repo
+
+$ openstack undercloud install|tee undercloud_deployment.txt
+$ for i in `nova flavor-list | grep -iv baremetal |grep True | cut -f2 -d\|` ; do nova flavor-delete $i ; done
+$ openstack flavor create --id auto --ram 4000 --disk 40 --vcpus 2 control
+$ openstack flavor create --id auto --ram 3000 --disk 40 --vcpus 2 compute
+$ openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="control" control
+$ openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="compute" compute
+$ sudo yum install rhosp-director-images rhosp-director-images-ipa -y
+$ mkdir ~/images; cd ~/images
+$ for i in `ls /usr/share/rhosp-director-images/*latest* ` ; do tar xvf $i ; done'
+$ openstack overcloud image upload
+$ neutron subnet-update 28984786-227e-47a2-a904-e9a4de7f1dad --dns-nameserver 192.168.122.1
+
+
+# "cat > /usr/bin/bootif-fix  << EOF
+#!/usr/bin/env bash
+
+while true;
+         do find /httpboot/ -type f ! -iname "kernel" ! -iname "ramdisk" ! -iname "*.kernel" ! -iname "*.ramdisk" -exec sed -i 's|{mac|{net0/mac|g' {} +;
+done
+EOF
+
+chmod +x /usr/bin/bootif-fix
+
+cat > /usr/lib/systemd/system/bootif-fix.service << EOF
+[Unit]
+Description=Automated fix for incorrect iPXE BOOFIF
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bootif-fix
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl restart bootif-fix"
+
+$ openstack baremetal import --json instackenv.json 
+$ ironic node-list
+$ openstack baremetal configure boot
+$ ironic node-update f213f475-71a9-4d4e-8257-e3a0d589e74c replace properties/capabilities="profile:control,boot_option:local"
+$ ironic node-update b9e5a7a0-4efe-4460-9a3f-87e27abb25b4 replace properties/capabilities="profile:compute,boot_option:local"
+$ openstack baremetal introspection bulk start
+$ 
