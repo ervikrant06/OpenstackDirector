@@ -1,0 +1,29 @@
+resource_registry:
+  OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/controller.yaml
+  OS::TripleO::CephStorage::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/ceph-storage.yaml
+
+parameters:
+  # Set to "br-ex" if using floating IPs on native VLAN on bridge br-ex
+ 
+parameter_defaults:
+  ExternalNetCidr: '10.11.48.0/24'
+  ExternalAllocationPools: [{'start': '10.11.48.181', 'end': '10.11.48.190'}]
+  ExternalNetworkVlanID: 10
+  ExternalInterfaceDefaultRoute: '10.11.48.254'
+  InternalApiNetCidr: '192.168.124.0/24'
+  TenantNetCidr: '192.168.123.0/24'
+  StorageNetCidr: '192.168.125.0/24'
+  StorageMgmtNetCidr: '192.168.128.0/24'
+  InternalApiAllocationPools: [{'start': '192.168.124.20', 'end': '192.168.124.200'}]
+  TenantAllocationPools: [{'start': '192.168.123.20', 'end': '192.168.123.200'}]
+  StorageAllocationPools: [{'start': '192.168.125.20', 'end': '192.168.125.200'}]
+  StorageMgmtAllocationPools: [{'start': '192.168.128.30', 'end': '192.168.128.60'}]
+  # Leave room for floating IPs in the External allocation pool
+  InternalApiNetworkVlanID: 30
+  StorageNetworkVlanID: 20
+  StorageMgmtNetworkVlanID: 40
+  TenantNetworkVlanID: 50
+  ControlPlaneDefaultRoute: 192.0.2.250
+  EC2MetadataIp: 192.0.2.1
+  NeutronExternalNetworkBridge: "''"
