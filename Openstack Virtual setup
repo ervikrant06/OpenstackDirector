@@ -113,14 +113,16 @@ EOF
 
 systemctl restart bootif-fix"
 
-
+11. Importing the nodes in ironic DB and tagging the nodes. 
 
 $ openstack baremetal import --json instackenv.json 
 $ ironic node-list
 $ openstack baremetal configure boot
 $ ironic node-update f213f475-71a9-4d4e-8257-e3a0d589e74c replace properties/capabilities="profile:control,boot_option:local"
 $ ironic node-update b9e5a7a0-4efe-4460-9a3f-87e27abb25b4 replace properties/capabilities="profile:compute,boot_option:local"
+
+12. Start the introspection. 
+
 $ openstack baremetal introspection bulk start
-$
 
 ## Create the templates for the deployment and ran the deployment script.
