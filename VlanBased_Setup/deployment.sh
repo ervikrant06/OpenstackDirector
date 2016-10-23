@@ -1,0 +1,1 @@
+openstack overcloud deploy --compute-scale 1 --control-scale 3 --templates -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/network-environment.yml --control-flavor control --compute-flavor compute --ntp-server 192.0.2.1 --timeout 90
