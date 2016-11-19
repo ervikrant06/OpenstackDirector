@@ -2,9 +2,6 @@ resource_registry:
   OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/compute.yaml
   OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/controller.yaml
   OS::TripleO::CephStorage::Net::SoftwareConfig: /home/stack/vault/jaison/templates/vlan-provider_ceph/nic-configs/ceph-storage.yaml
-
-parameters:
-  # Set to "br-ex" if using floating IPs on native VLAN on bridge br-ex
  
 parameter_defaults:
   ExternalNetCidr: '10.11.48.0/24'
