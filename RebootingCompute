@@ -1,0 +1,26 @@
+cat sriov_templates/firstboot.yaml 
+resource_registry:
+  OS::TripleO::NodeUserData: /home/stack/sriov_templates/compute_sriov.yaml
+[stack@ibm-x3630m4-5 ~]$ cat /home/stack/sriov_templates/compute_sriov.yaml
+heat_template_version: 2014-10-16
+
+description: >
+  Set SRIOV configuration on compute
+
+resources:
+  userdata:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+      - config: {get_resource: compute_config}
+
+  compute_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      config: |
+        #!/bin/bash
+         if [ `echo $HOSTNAME | grep compute` ] ; then  echo "`date`" >> /root/task.txt; reboot; fi
+
+outputs:
+  OS::stack_id:
+    value: {get_resource: userdata}
