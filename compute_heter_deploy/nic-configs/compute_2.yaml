@@ -90,7 +90,7 @@ resources:
                   next_hop: {get_param: ControlPlaneDefaultRoute}
             -
               type: ovs_bridge
-              name: {get_input: bridge_name}
+              name: br-compute2
               members:
                 -
                   type: interface

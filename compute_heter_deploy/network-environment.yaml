@@ -25,8 +25,6 @@ parameter_defaults:
   EC2MetadataIp: 192.0.2.1
   NeutronExternalNetworkBridge: "''"
   ControllerCount: 1
-  ControllerSchedulerHints:
-    'capabilities:profile': 'control'
   #ComputeCount: 0
   Compute_1: 1
   Compute_2: 1

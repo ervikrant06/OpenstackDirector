@@ -97,7 +97,7 @@ resources:
 
             -
               type: ovs_bridge
-              name: {get_input: bridge_name}
+              name: br-ex
               members:
                 -
                   type: interface
