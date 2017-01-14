@@ -1,0 +1,29 @@
+resource_registry:
+  OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/templates/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/templates/controller.yaml
+  OS::TripleO::CephStorage::Net::SoftwareConfig: /home/stack/templates/ceph-storage.yaml
+  OS::TripleO::NodeUserData: /home/stack/templates/first-boot.yaml
+parameter_defaults:
+  ControlPlaneSubnetCidr: '24'
+  EC2MetadataIp: 192.0.2.128  # Generally the IP of the Undercloud
+  DnsServers: ["10.75.5.25"]
+  NeutronExternalNetworkBridge: "''"
+  NeutronTunnelTypes: 'vxlan'
+  ExternalNetCidr: '10.65.199.128/27'
+  ExternalAllocationPools: [{'start': '10.65.199.130', 'end': '10.65.199.155'}]
+  ExternalNetworkVlanID: 169
+  ExternalInterfaceDefaultRoute: '10.65.199.158'
+  InternalApiNetCidr: '10.65.199.0/27'
+  TenantNetCidr: '10.65.199.96/27'
+  StorageNetCidr: '10.65.199.32/27'
+  StorageMgmtNetCidr: '10.65.199.64/27'
+  InternalApiAllocationPools: [{'start': '10.65.199.1', 'end': '10.65.199.27'}]
+  TenantAllocationPools: [{'start': '10.65.199.97', 'end': '10.65.199.123'}]
+  StorageAllocationPools: [{'start': '10.65.199.33', 'end': '10.65.199.59'}]
+  StorageMgmtAllocationPools: [{'start': '10.65.199.65', 'end': '10.65.199.91'}]
+  InternalApiNetworkVlanID: 165
+  StorageNetworkVlanID: 166
+  StorageMgmtNetworkVlanID: 167
+  TenantNetworkVlanID: 168
+  ControlPlaneDefaultRoute: 192.0.2.128
+  NeutronDhcpAgentsPerNetwork: 3
