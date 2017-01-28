@@ -31,7 +31,7 @@ resources:
   wipe_disk:
     type: OS::Heat::SoftwareConfig
     properties:
-      config: {get_file: /home/stack/templates/wipe-disk.sh}
+      config: {get_file: /home/stack/templates/sriov/wipe-disk.sh}
 
 outputs:
   OS::stack_id:
