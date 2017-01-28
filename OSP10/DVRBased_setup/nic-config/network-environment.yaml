@@ -1,0 +1,37 @@
+#This file is an example of an environment file for defining the isolated
+#networks and related parameters.
+resource_registry:
+  # Network Interface templates to use (these files must exist)
+  OS::TripleO::Compute::Net::SoftwareConfig:  /home/stack/nic-config/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig:  /home/stack/nic-config/controller.yaml
+  #OS::TripleO::CephStorage::Net::SoftwareConfig: /home/stack/nic-config/ceph-storage.yaml
+
+parameter_defaults:
+  UpdateIdentifier: ''
+  NeutronExternalNetworkBridge: "''"
+
+  ExternalNetCidr: '10.11.48.0/24'
+  ExternalAllocationPools: [{'start': '10.11.48.181', 'end': '10.11.48.190'}]
+  ExternalNetworkVlanID: 10
+  ExternalInterfaceDefaultRoute: '10.11.48.254'
+  InternalApiNetCidr: '192.168.124.0/24'
+  StorageNetCidr: '192.168.125.0/24'
+  TenantNetCidr: '192.168.123.0/24'
+  StorageMgmtNetCidr: '192.168.128.0/24'
+
+  InternalApiAllocationPools: [{'start': '192.168.124.20', 'end': '192.168.124.200'}]
+  StorageAllocationPools: [{'start': '192.168.125.20', 'end': '192.168.125.200'}]
+  TenantAllocationPools: [{'start': '192.168.123.20', 'end': '192.168.123.200'}]
+  StorageMgmtAllocationPools: [{'start': '192.168.128.20', 'end': '192.168.128.200'}]
+
+
+  InternalApiNetworkVlanID: 30
+  StorageNetworkVlanID: 20
+  TenantNetworkVlanID: 50
+  StorageMgmtNetworkVlanID: 40
+  
+  ControlPlaneDefaultRoute: 192.0.2.250
+  EC2MetadataIp: 192.0.2.1
+  #NeutronEnableDVR: True
+  #NeutronEnableL2Pop: True
+                            
