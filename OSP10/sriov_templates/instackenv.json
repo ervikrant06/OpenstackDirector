@@ -1,0 +1,83 @@
+{
+  "nodes": [
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.22",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "44:A8:42:1E:87:90"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    },
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.24",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "44:A8:42:1E:7E:84"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    },
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.44",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "98:BE:94:FA:37:20"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    },
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.46",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "98:BE:94:FA:39:18"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    },
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.48",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "98:BE:94:FA:38:58"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    },
+    {
+      "pm_user": "rcuser",
+      "pm_addr": "10.65.176.50",
+      "pm_password": "Access@gis",
+      "pm_type": "pxe_ipmitool",
+      "mac": [
+        "98:BE:94:FA:37:80"
+      ],
+      "cpu": "1",
+      "memory": "4096",
+      "disk": "40",
+      "arch": "x86_64"
+    }
+  ]
+}
+
