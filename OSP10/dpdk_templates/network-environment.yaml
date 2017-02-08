@@ -1,0 +1,120 @@
+#This file is an example of an environment file for defining the isolated
+#networks and related parameters.
+resource_registry:
+  OS::TripleO::Services::ComputeNeutronOvsAgent: /usr/share/openstack-tripleo-heat-templates/puppet/services/neutron-ovs-dpdk-agent.yaml
+  OS::TripleO::NodeUserData: /home/stack/dpdk_templates/first-boot.yaml
+  OS::TripleO::NodeExtraConfigPost: /home/stack/dpdk_templates/post-install.yaml
+
+  # Network Interface templates to use (these files must exist)
+  OS::TripleO::BlockStorage::Net::SoftwareConfig:
+    /home/stack/dpdk_templates/network/config/cinder-storage.yaml
+  OS::TripleO::Compute::Net::SoftwareConfig:
+    /home/stack/dpdk_templates/network/config/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig:
+    /home/stack/dpdk_templates/network/config/controller.yaml
+  OS::TripleO::ObjectStorage::Net::SoftwareConfig:
+    /home/stack/dpdk_templates/network/config/swift-storage.yaml
+  OS::TripleO::CephStorage::Net::SoftwareConfig:
+    /home/stack/dpdk_templates/network/config/ceph-storage.yaml
+
+parameter_defaults:
+  # This section is where deployment-specific configuration is done
+  # CIDR subnet mask length for provisioning network
+  ControlPlaneSubnetCidr: '24'
+  # Gateway router for the provisioning network (or Undercloud IP)
+  ControlPlaneDefaultRoute: 192.0.2.1
+  EC2MetadataIp: 192.0.2.1  # Generally the IP of the Undercloud
+  # Customize the IP subnets to match the local environment
+#  InternalApiNetCidr: 172.17.0.0/24
+#  StorageNetCidr: 172.18.0.0/24
+#  StorageMgmtNetCidr: 172.19.0.0/24
+#  TenantNetCidr: 172.16.0.0/24
+#  ExternalNetCidr: 10.0.0.0/24
+  # Customize the VLAN IDs to match the local environment
+#  InternalApiNetworkVlanID: 20
+#  StorageNetworkVlanID: 30
+#  StorageMgmtNetworkVlanID: 40
+#  TenantNetworkVlanID: 50
+#  ExternalNetworkVlanID: 10
+  # Customize the IP ranges on each network to use for static IPs and VIPs
+#  InternalApiAllocationPools: [{'start': '172.17.0.10', 'end': '172.17.0.200'}]
+#  StorageAllocationPools: [{'start': '172.18.0.10', 'end': '172.18.0.200'}]
+#  StorageMgmtAllocationPools: [{'start': '172.19.0.10', 'end': '172.19.0.200'}]
+#  TenantAllocationPools: [{'start': '172.16.0.10', 'end': '172.16.0.200'}]
+  # Leave room if the external network is also used for floating IPs
+#  ExternalAllocationPools: [{'start': '10.0.0.10', 'end': '10.0.0.50'}]
+  # Gateway router for the external network
+#  ExternalInterfaceDefaultRoute: 10.0.0.1
+  # Uncomment if using the Management Network (see network-management.yaml)
+  # ManagementNetCidr: 10.0.1.0/24
+  # ManagementAllocationPools: [{'start': '10.0.1.10', 'end', '10.0.1.50'}]
+  # Use either this parameter or ControlPlaneDefaultRoute in the NIC templates
+  # ManagementInterfaceDefaultRoute: 10.0.1.1
+  # Define the DNS servers (maximum 2) for the overcloud nodes
+  DnsServers: ["10.75.5.25","10.38.5.26","8.8.8.8"]
+  # Set to empty string to enable multiple external networks or VLANs
+  NeutronExternalNetworkBridge: "''"
+  # The tunnel type for the tenant network (vxlan or gre). Set to '' to disable tunneling.
+  NeutronTunnelTypes: 'vxlan'
+  NeutronNetworkType: 'vlan,vxlan'
+# Since this is a provider network with no router .
+#  neutron::agents::dhcp::enable_isolated_metadata: true # not working
+  controllerExtraConfig:
+    neutron::agents::dhcp::enable_isolated_metadata: true
+
+
+  # Customize bonding options, e.g. "mode=4 lacp_rate=1 updelay=1000 miimon=100"
+#  BondInterfaceOvsOptions: "bond_mode=active-backup"
+
+
+  # The OVS logical->physical bridge mappings to use.
+  NeutronBridgeMappings: 'dpdk0:br-link0'
+  # The Neutron ML2 and OpenVSwitch vlan mapping range to support.
+  NeutronNetworkVLANRanges: 'dpdk0:170:172'
+  # Nova flavor to use.
+  OvercloudControlFlavor: control
+  OvercloudComputeFlavor: compute
+  # Number of nodes to deploy.
+  ControllerCount: 1
+  ComputeCount: 2
+
+  # Sets overcloud nodes custom names
+  # http://docs.openstack.org/developer/tripleo-docs/advanced_deployment/node_placement.html#custom-hostnames
+  ControllerHostnameFormat: 'controller-%index%'
+  ComputeHostnameFormat: 'compute-%index%'
+#  CephStorageHostnameFormat: 'ceph-%index%'
+#  ObjectStorageHostnameFormat: 'swift-%index%'
+
+  ##########################
+  # OVS DPDK configuration #
+  ##########################
+  ## NeutronDpdkCoreList and NeutronDpdkMemoryChannels are REQUIRED settings.
+  ## Attempting to deploy DPDK without appropriate values will cause deployment to fail or lead to unstable deployments.
+  # List of cores to be used for DPDK Poll Mode Driver
+  NeutronDpdkCoreList: "'2,4'"
+# Doc should mentioned that these cpu needs to unpinned or non-isolated cores .
+  # Number of memory channels to be used for DPDK
+  NeutronDpdkMemoryChannels: "2"
+  # NeutronDpdkSocketMemory
+  NeutronDpdkSocketMemory: "'1024,0'"
+  # NeutronDpdkDriverType
+  NeutronDpdkDriverType: "vfio-pci"
+
+  # Reserved RAM for host processes
+  NovaReservedHostMemory: 1024
+  # A list or range of physical CPU cores to reserve for virtual machine processes.
+  # Example: NovaVcpuPinSet: ['4-12','^8'] will reserve cores from 4-12 excluding 8
+  NovaVcpuPinSet: "8-11"
+  #Set a list or range of physical CPU cores to be tuned:
+  HostCpusList: '2,4,8-11'
+
+  # An array of filters used by Nova to filter a node.These filters will be applied in the order they are listed,
+  # so place your most restrictive filters first to make the filtering process more efficient.
+  NovaSchedulerDefaultFilters: "RamFilter,ComputeFilter,AvailabilityZoneFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,PciPassthroughFilter,NUMATopologyFilter"
+  # Kernel arguments for Compute node
+# Related first-boot.yaml
+  ComputeKernelArgs: "default_hugepagesz=1GB hugepagesz=1G hugepages=12 iommu=pt intel_iommu=on selinux=0"
+#New additions
+  NeutronDatapathType: "netdev"
+  NeutronVhostuserSocketDir: "/var/run/openvswitch"
+

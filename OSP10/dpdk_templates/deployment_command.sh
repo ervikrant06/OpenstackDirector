@@ -1,0 +1,1 @@
+openstack overcloud deploy  --ntp-server  clock.corp.redhat.com   --templates  -e /home/stack/dpdk_templates/network-environment.yaml -e /home/stack/dpdk_templates/storage-environment.yaml --reg-method satellite --reg-sat-url http://satellite.pnq.cee.redhat.com --reg-org "Redhat_Inc" --reg-activation-key "RHOS10" --reg-force
