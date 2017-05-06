@@ -1,0 +1,1 @@
+openstack  overcloud deploy  --templates /usr/share/openstack-tripleo-heat-templates/ -e /home/stack/nic-configs/network-isolation.yaml -e /home/stack/nic-configs/network-environment.yaml -r /home/stack/nic-configs/customer_role_data.yaml --timeout 90 --libvirt-type qemu --ntp-server 192.0.2.1

@@ -1,0 +1,43 @@
+Verify that deployment is completed successfully.
+
+- Create flavor and glance image to spawn instances
+
+~~~
+source overcloudrc
+nova flavor-create m1.tiny auto 512 1 1
+glance image-create --container-format bare --disk-format qcow2 --file cirros-0.3.5-x86_64-disk.img --name cirros
+~~~
+
+- Add the provider compute node into different aggregate to keep the isolation.
+
+~~~
+nova aggregate-create nova-provider nova-provider
+nova aggregate-add-host nova-provider overcloud-computeprovider-0.localdomain
+~~~
+
+- Create two kind of networks:
+
+1) Use to spawn instances on simple compute nodes. 
+
+~~~
+neutron net-create internal1
+neutron subnet-create internal1 10.10.10.0/24
+neutron router-create router1
+neutron net-create ext_net --provider:network_type vlan --provider:physical_network datacentre  --provider:segmentation_id 11 --router:external
+neutron subnet-create ext_net --allocation-pool start=10.11.48.100,end=10.11.48.150 --gateway 10.11.48.254  10.11.48.254/24 --enable_dhcp=True
+~~~
+
+2) Use to spawn instances on provider network compute nodes. 
+
+~~~
+neutron net-create ext_net_provider --provider:network_type vlan --provider:physical_network datacentre  --provider:segmentation_id 10 --router:external
+neutron subnet-create ext_net_provider --allocation-pool start=10.11.48.100,end=10.11.48.150 --gateway 10.11.48.254  10.11.48.254/24 --enable_dhcp=True
+~~~
+
+- Spawn three instances. Third instance is spawned just to show that instance will not be able to pick the IPaddress from provider network if it's getting lanched on wrong compute node. 
+
+~~~
+nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic net-id=7e4baf0e-54b5-4e51-9533-2c75179d6d83 --availability-zone nova:overcloud-compute-0.localdomain non-provider-instance1
+nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic net-id=40f6d3ac-0595-42c3-8a93-0ff5eafdeadf --availability-zone nova-provider:overcloud-computeprovider-0.localdomain provider-instance1
+nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic net-id=40f6d3ac-0595-42c3-8a93-0ff5eafdeadf --availability-zone nova:overcloud-compute-0.localdomain provider-instance2
+~~~
