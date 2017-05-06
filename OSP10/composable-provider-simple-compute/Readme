@@ -41,3 +41,43 @@ nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic ne
 nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic net-id=40f6d3ac-0595-42c3-8a93-0ff5eafdeadf --availability-zone nova-provider:overcloud-computeprovider-0.localdomain provider-instance1
 nova boot --flavor m1.tiny --image 026f6787-1600-4e77-8a5e-be0cd80d1357 --nic net-id=40f6d3ac-0595-42c3-8a93-0ff5eafdeadf --availability-zone nova:overcloud-compute-0.localdomain provider-instance2
 ~~~
+
+First two instances are pingable with floating ip without any issue but the last one is spawned on wrong compute node hence it was not able to pick the IP address automatically which was an expected behavior. 
+
+~~~
++--------------------------------------+------------------------+--------+------------+-------------+------------------------------------+
+| ID                                   | Name                   | Status | Task State | Power State | Networks                           |
++--------------------------------------+------------------------+--------+------------+-------------+------------------------------------+
+| 386bf136-d6ce-4681-8dda-56d253b7f0f1 | non-provider-instance1 | ACTIVE | -          | Running     | internal1=10.10.10.4, 10.11.49.106 |
+| 874e0066-d8e3-442b-844d-c551268874d5 | provider-instance1     | ACTIVE | -          | Running     | ext_net_provider=10.11.48.110      |
+| fe9953f4-939c-47b1-90f6-69eecbd35c43 | provider-instance2     | ACTIVE | -          | Running     | ext_net_provider=10.11.48.103      |
++--------------------------------------+------------------------+--------+------------+-------------+------------------------------------+
+~~~
+
+Ping results:
+
+~~~
+[stack@instack ~]$ ping 10.11.49.106 -c 1
+PING 10.11.49.106 (10.11.49.106) 56(84) bytes of data.
+64 bytes from 10.11.49.106: icmp_seq=1 ttl=62 time=0.942 ms
+
+--- 10.11.49.106 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.942/0.942/0.942/0.000 ms
+[stack@instack ~]$ ping 10.11.48.110 -c 1
+PING 10.11.48.110 (10.11.48.110) 56(84) bytes of data.
+64 bytes from 10.11.48.110: icmp_seq=1 ttl=63 time=2.35 ms
+
+--- 10.11.48.110 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 2.355/2.355/2.355/0.000 ms
+[stack@instack ~]$ ping 10.11.48.103 -c 1
+PING 10.11.48.103 (10.11.48.103) 56(84) bytes of data.
+From 10.11.48.254 icmp_seq=1 Destination Host Unreachable
+
+--- 10.11.48.103 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+[stack@instack ~]$ 
+~~~
+
