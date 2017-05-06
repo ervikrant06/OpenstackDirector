@@ -1,0 +1,1 @@
+openstack overcloud deploy --templates /usr/share/openstack-tripleo-heat-templates -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/dvr-configs/network-environment.yaml -e /home/stack/dvr-configs/neutron-ovs-dvr.yaml --neutron-tunnel-types vxlan --neutron-network-type vxlan --timeout 90 --libvirt-type qemu --ntp-server 192.0.2.1

@@ -1,0 +1,155 @@
+Test the configuration by spawning an instance.
+
+- Before spawning an instance, create network and glance image.
+
+~~~
+nova flavor-create m1.tiny auto 512 1 1
+glance image-create --name cirros --container-format bare --disk-format qcow2 --file cirros-0.3.5-x86_64-disk.img
+neutron net-create --provider:network_type vlan --provider:physical_network datacentre --router:external True --name external
+neutron subnet-create --name external --gateway 10.11.48.254 --allocation-pool start=10.11.48.92,end=10.11.48.106 --disable-dhcp external 10.11.48.0/24
+neutron net-create internal
+neutron subnet-create --name internal internal 10.10.10.0/24
+neutron router-create router
+neutron  router-interface-add  router internal
+neutron router-gateway-set router external
+nova boot --flavor m1.tiny --image cirros --nic net-id=843ef264-d1e7-44aa-82c2-de34266af607 test01
+~~~
+
+- Attach floating ip to instance.
+
+~~~
+[stack@instack ~]$ nova list
++--------------------------------------+--------+--------+------------+-------------+------------------------------------+
+| ID                                   | Name   | Status | Task State | Power State | Networks                           |
++--------------------------------------+--------+--------+------------+-------------+------------------------------------+
+| 73d4260d-3cf6-4949-af90-337d59044eab | test01 | ACTIVE | -          | Running     | internal1=10.10.10.3, 10.11.48.100 |
++--------------------------------------+--------+--------+------------+-------------+------------------------------------+
+~~~
+
+- Compute node on which instance is spawned. Verify that compute node is having these two namespaces after attaching floating ip with instance. 
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns list
+fip-746344b2-b2b8-4aea-894a-d22c4fcc7873
+qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93
+~~~
+
+- Default gateway of internal network should be in qrouter namespace.
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: rfp-dba67abb-e: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1496 qdisc noqueue state UP qlen 1000
+    link/ether 46:4c:e4:4b:5b:74 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 169.254.106.114/31 scope global rfp-dba67abb-e
+       valid_lft forever preferred_lft forever
+    inet6 fe80::444c:e4ff:fe4b:5b74/64 scope link 
+       valid_lft forever preferred_lft forever
+15: qr-e7feed9f-45: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1446 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether fa:16:3e:24:a8:d2 brd ff:ff:ff:ff:ff:ff
+    inet 10.10.10.1/24 brd 10.10.10.255 scope global qr-e7feed9f-45
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe24:a8d2/64 scope link 
+       valid_lft forever preferred_lft forever
+~~~
+
+By default router namespace on compute node doesn't contain any route then how it's routing the traffic to fip namespace. 
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip route 
+10.10.10.0/24 dev qr-e7feed9f-45  proto kernel  scope link  src 10.10.10.1 
+169.254.106.114/31 dev rfp-dba67abb-e  proto kernel  scope link  src 169.254.106.114 
+~~~
+
+This will route the traffic using ip rule table to fip namespace.
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip rule
+0:	from all lookup local 
+32766:	from all lookup main 
+32767:	from all lookup default 
+57481:	from 10.10.10.3 lookup 16 
+168430081:	from 10.10.10.1/24 lookup 168430081 
+
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip route list table 168430081
+default via 10.10.10.6 dev qr-e7feed9f-45 
+
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip route list table 16
+default via 169.254.106.115 dev rfp-dba67abb-e 
+~~~
+
+NATing happens on package before it send the packet to fip namespace.
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns exec qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93 iptables -t nat -L | grep '10.10.10'
+DNAT       all  --  anywhere             10.11.48.100         to:10.10.10.3
+SNAT       all  --  10.10.10.3           anywhere             to:10.11.48.100
+~~~
+
+From FIP namespace traffic is going to external world.
+
+~~~
+[root@overcloud-compute-0 ~]# ip netns exec fip-746344b2-b2b8-4aea-894a-d22c4fcc7873 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: fpr-dba67abb-e: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1496 qdisc noqueue state UP qlen 1000
+    link/ether 26:c6:ba:64:04:5c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 169.254.106.115/31 scope global fpr-dba67abb-e
+       valid_lft forever preferred_lft forever
+    inet6 fe80::24c6:baff:fe64:45c/64 scope link 
+       valid_lft forever preferred_lft forever
+20: fg-a66b9383-41: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1496 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether fa:16:3e:80:de:7c brd ff:ff:ff:ff:ff:ff
+    inet 10.11.48.95/24 brd 10.11.48.255 scope global fg-a66b9383-41
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe80:de7c/64 scope link 
+       valid_lft forever preferred_lft forever
+
+[root@overcloud-compute-0 ~]# ip netns exec fip-746344b2-b2b8-4aea-894a-d22c4fcc7873 ip route
+default via 10.11.48.254 dev fg-a66b9383-41 
+10.11.48.0/24 dev fg-a66b9383-41  proto kernel  scope link  src 10.11.48.95 
+10.11.48.100 via 169.254.106.114 dev fpr-dba67abb-e 
+169.254.106.114/31 dev fpr-dba67abb-e  proto kernel  scope link  src 169.254.106.115 
+~~~
+
+- On controller node along with qrouter and dhcp, snat namespace is present which is used to route packet to external world if the instance doesn't have floating ip.
+
+~~~
+[root@overcloud-controller-0 ~]# ip netns list
+snat-dba67abb-e4dc-4f29-bde3-34222c1bac93
+qrouter-dba67abb-e4dc-4f29-bde3-34222c1bac93
+qdhcp-843ef264-d1e7-44aa-82c2-de34266af607
+
+[root@overcloud-controller-0 ~]# ip netns exec snat-dba67abb-e4dc-4f29-bde3-34222c1bac93 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+16: sg-d8290e3f-68: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1446 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether fa:16:3e:69:9e:07 brd ff:ff:ff:ff:ff:ff
+    inet 10.10.10.6/24 brd 10.10.10.255 scope global sg-d8290e3f-68
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe69:9e07/64 scope link 
+       valid_lft forever preferred_lft forever
+17: qg-f3ba96cc-7d: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1496 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether fa:16:3e:43:1e:f9 brd ff:ff:ff:ff:ff:ff
+    inet 10.11.48.92/24 brd 10.11.48.255 scope global qg-f3ba96cc-7d
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe43:1ef9/64 scope link 
+       valid_lft forever preferred_lft forever
+
+[root@overcloud-controller-0 ~]# ip netns exec snat-dba67abb-e4dc-4f29-bde3-34222c1bac93 iptables -t nat -L | grep SNAT
+SNAT       all  --  anywhere             anywhere             to:10.11.48.92
+SNAT       all  --  anywhere             anywhere             mark match ! 0x2/0xffff ctstate DNAT to:10.11.48.92
+~~~
